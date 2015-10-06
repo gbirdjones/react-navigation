@@ -3480,9 +3480,7 @@ function drainQueue() {
         currentQueue = queue;
         queue = [];
         while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
+            currentQueue[queueIndex].run();
         }
         queueIndex = -1;
         len = queue.length;
@@ -3534,6 +3532,7 @@ process.binding = function (name) {
     throw new Error('process.binding is not supported');
 };
 
+// TODO(shtylman)
 process.cwd = function () { return '/' };
 process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
@@ -32690,54 +32689,20 @@ module.exports = React.createClass({
 		});
 	},
 	render: function render() {
-		var currentPage = Backbone.history.getFragment();
+		var links = [];
 
-		var links = [React.createElement(
-			'li',
-			{ key: 'home', className: currentPage === '' ? 'active' : '' },
-			React.createElement(
-				'a',
-				{ href: '#' },
-				'Home'
-			)
-		)];
-
-		if (Parse.User.current()) {
-			links.push(React.createElement(
-				'li',
-				{ key: 'dashboard', className: currentPage === 'dashboard' ? 'active' : '' },
-				React.createElement(
-					'a',
-					{ href: '#dashboard' },
-					'Dashboard'
-				)
-			));
-			links.push(React.createElement(
-				'li',
-				{ key: 'logout' },
-				React.createElement(
-					'a',
-					{ href: '#logout' },
-					'Logout'
-				)
-			));
+		if (!Parse.User.current()) {
+			links.push(this.createNavLink('login', 'login'));
+			links.push(this.createNavLink('register', 'register'));
 		} else {
+			links.push(this.createNavLink('dashboard', 'dashboard'));
 			links.push(React.createElement(
 				'li',
-				{ key: 'login', className: currentPage === 'login' ? 'active' : '' },
+				null,
 				React.createElement(
 					'a',
-					{ href: '#login' },
-					'Login'
-				)
-			));
-			links.push(React.createElement(
-				'li',
-				{ key: 'register', className: currentPage === 'register' ? 'active' : '' },
-				React.createElement(
-					'a',
-					{ href: '#register' },
-					'Register'
+					{ href: '#', onClick: this.logOut },
+					'Logout'
 				)
 			));
 		}
@@ -32753,10 +32718,50 @@ module.exports = React.createClass({
 			React.createElement(
 				'ul',
 				{ id: 'nav-mobile', className: 'right' },
+				React.createElement(
+					'li',
+					{ key: 'home' },
+					React.createElement(
+						'a',
+						{ href: '#' },
+						'Home'
+					)
+				),
 				links
 			)
 		);
+	},
+	logOut: function logOut(e) {
+		e.preventDefault();
+		Parse.User.logOut();
+		this.props.router.navigate('login', { trigger: true });
+		console.log('logged out');
+	},
+	createNavLink: function createNavLink(url, label) {
+		var currentUrl = Backbone.history.getFragment();
+		if (currentUrl === url) {
+			return React.createElement(
+				'li',
+				{ className: 'active' },
+				React.createElement(
+					'a',
+					{ href: '#' + url },
+					label
+				)
+			);
+		} else {
+			return React.createElement(
+				'li',
+				null,
+				React.createElement(
+					'a',
+					{ href: '#' + url },
+					label
+				)
+			);
+		}
 	}
+
 });
 
 },{"backbone":1,"react":159}],164:[function(require,module,exports){
@@ -32864,8 +32869,6 @@ var Backbone = require('backbone');
 window.$ = require('jquery');
 window.jQuery = $;
 
-Parse.initialize('bWo3oxF8mUmVjOzLWZaeVYGOYRlJAUJVu9RRVVEB', 'agubNevaI7RuF4hlu4DVHQWlCc4i3EbTBLSftsLp');
-
 var NavigationComponent = require('./components/NavigationComponent');
 var HomeComponent = require('./components/HomeComponent');
 var DashboardComponent = require('./components/DashboardComponent');
@@ -32873,6 +32876,8 @@ var LoginComponent = require('./components/LoginComponent');
 var RegisterComponent = require('./components/RegisterComponent');
 
 var app = document.getElementById('app');
+
+Parse.initialize('RxMepQLpuFxLifcJN3HKqsWsq6TCJrak7vqlXyci', 'XMlIcffIfaFBuSOb56L2DdXxLjmlTenVUtHkMFEq');
 
 var Router = Backbone.Router.extend({
 	routes: {
@@ -32885,14 +32890,28 @@ var Router = Backbone.Router.extend({
 		React.render(React.createElement(HomeComponent, null), app);
 	},
 	dashboard: function dashboard() {
-		React.render(React.createElement(DashboardComponent, null), app);
-	},
-	login: function login() {
-		React.render(React.createElement(LoginComponent, { router: r }), app);
+		if (!Parse.User.current()) {
+			this.navigate('login', { trigger: true });
+		} else {
+			React.render(React.createElement(DashboardComponent, null), app);
+		}
 	},
 	register: function register() {
-		React.render(React.createElement(RegisterComponent, { router: r }), app);
+		if (Parse.User.current()) {
+			this.navigate('dashboard', { trigger: true });
+		} else {
+			React.render(React.createElement(RegisterComponent, { router: r }), app);
+		}
+	},
+
+	login: function login() {
+		if (Parse.User.current()) {
+			this.navigate('dashboard', { trigger: true });
+		} else {
+			React.render(React.createElement(LoginComponent, { router: r }), app);
+		}
 	}
+
 });
 
 var r = new Router();

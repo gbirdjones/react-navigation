@@ -12,6 +12,9 @@ var RegisterComponent = require('./components/RegisterComponent');
 
 var app = document.getElementById('app');
 
+Parse.initialize('RxMepQLpuFxLifcJN3HKqsWsq6TCJrak7vqlXyci', 'XMlIcffIfaFBuSOb56L2DdXxLjmlTenVUtHkMFEq');
+
+
 var Router = Backbone.Router.extend({
 	routes: {
 		'': 'home',
@@ -23,14 +26,28 @@ var Router = Backbone.Router.extend({
 		React.render(<HomeComponent />, app);
 	},
 	dashboard: function() {
-		React.render(<DashboardComponent />, app);
-	},
-	login: function() {
-		React.render(<LoginComponent router={r} />, app);
+		if(!Parse.User.current()) {
+			this.navigate('login', {trigger: true});
+		} else {
+			React.render(<DashboardComponent />, app);
+		}
 	},
 	register: function() {
-		React.render(<RegisterComponent router={r} />, app);
-	}
+		if(Parse.User.current()) {
+			this.navigate('dashboard', {trigger: true});
+		} else {
+			React.render(<RegisterComponent router={r}/>, app);
+		}
+	},
+	
+	login: function() {
+		if(Parse.User.current()) {
+			this.navigate('dashboard', {trigger: true});
+		} else {
+			React.render(<LoginComponent router={r}/>, app);
+		}
+	},
+	
 });
 
 var r = new Router();
